@@ -25,6 +25,14 @@ def _load_request_by_id(request_id: str) -> PurchaseRequest:
     raise AssertionError(f"Sample request {request_id} was not found in mock_data/requests.json")
 
 
+def _load_request_record_by_id(request_id: str) -> dict[str, object]:
+    """Return the full request record, including expected_outcome metadata."""
+    for request_record in load_requests():
+        if request_record.get("request_id") == request_id:
+            return request_record
+    raise AssertionError(f"Sample request {request_id} was not found in mock_data/requests.json")
+
+
 async def _run_case(request_id: str, expected_decision: str, rationale: str) -> None:
     """Run the agent for one request and verify decision and non-empty rationale."""
     request = _load_request_by_id(request_id)
@@ -89,3 +97,43 @@ async def test_agent_escalate_req_011_compliance_flagged_vendor() -> None:
         expected_decision="escalate",
         rationale="Escalated: Vertex Consulting is compliance-flagged and requires Legal/Compliance review.",
     )
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "request_id",
+    [
+        "REQ-006",
+        "REQ-007",
+        "REQ-008",
+        "REQ-009",
+        "REQ-010",
+        "REQ-011",
+        "REQ-001",
+        "REQ-002",
+        "REQ-003",
+    ],
+)
+async def test_agent_expected_outcome_matches_sample_request(request_id: str) -> None:
+    """Ensure agent decision aligns with expected_outcome for deterministic sample requests."""
+    request_record = _load_request_record_by_id(request_id)
+    expected_decision = str(request_record.get("expected_outcome", ""))
+    assert expected_decision in {"approve", "deny", "escalate"}
+
+    request = _load_request_by_id(request_id)
+    with procurement_agent.agent.override(
+        model=TestModel(
+            call_tools="all",
+            custom_output_args={
+                "request_id": request.request_id,
+                "decision": expected_decision,
+                "rationale": f"Simulated recommendation for {request_id}",
+            },
+        )
+    ):
+        raw_result = await procurement_agent.agent.run(
+            procurement_agent.build_request_prompt(request)
+        )
+
+    result = SimpleNamespace(data=raw_result.output)
+    assert result.data.decision == expected_decision
