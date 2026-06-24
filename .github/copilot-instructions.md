@@ -39,7 +39,7 @@ The agent **must** be constructed with `output_type=ProcurementRecommendation`.
 This tells Pydantic AI to constrain the LLM's response to that model's schema.
 Do not return raw strings or dicts from the agent. Always use the typed output contract.
 
-> **Note:** The older `result_type=` parameter is deprecated in Pydantic AI v1.x and will
+> **Note:** The older `output_type=` parameter is deprecated in Pydantic AI v1.x and will
 > emit a warning. Always use `output_type=` in new code.
 
 ```python
@@ -47,13 +47,13 @@ from pydantic_ai import Agent
 from models import PurchaseRequest, ProcurementRecommendation
 
 agent = Agent(
-    "anthropic:claude-3-5-haiku-latest",
+    "openai:gpt-4o-mini",
     output_type=ProcurementRecommendation,  # structured output contract
     system_prompt="...",
 )
 
-result = agent.run_sync(user_prompt)
-recommendation = result.data  # ProcurementRecommendation, never a raw string
+result = await agent.run(user_prompt)
+recommendation = result.output # ProcurementRecommendation, never a raw string
 ```
 
 Reference: <https://ai.pydantic.dev/results/#structured-results>

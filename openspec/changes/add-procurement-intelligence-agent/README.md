@@ -1,0 +1,3 @@
+# add-procurement-intelligence-agent
+
+The change introduces a Pydantic AI agent that pre-screens FedEx purchase requests and produces a structured approve/deny/escalate recommendation with a non-empty rationale. The agent reads mock data through data/loader.py (do not read mock_data/ directly), validates inputs and outputs against Pydantic v2 models (PurchaseRequest and ProcurementRecommendation, with decision constrained to one of approve/deny/escalate), and calls four tools in tools/: check_budget, check_vendor_duplication, check_policy_compliance, and assess_risk. Decision priority is escalate > deny > approve. Tool errors must be caught and reflected in the rationale.

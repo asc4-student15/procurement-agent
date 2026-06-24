@@ -72,7 +72,7 @@ and escalate the request rather than approving or denying without complete infor
 """
 
 agent: Agent[None, ProcurementRecommendation] = Agent(
-    model=os.getenv("PROCUREMENT_AGENT_MODEL", "anthropic:claude-3-5-haiku-latest"),
+    model=os.getenv("PROCUREMENT_AGENT_MODEL", "openai:gpt-4o-mini"),
     output_type=ProcurementRecommendation,
     system_prompt=_SYSTEM_PROMPT,
     tools=[check_budget, check_vendor_duplication, check_policy_compliance, assess_risk],
