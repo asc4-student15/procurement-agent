@@ -15,7 +15,7 @@ and the test suite is passing.
 
 | Field | Value |
 |-------|-------|
-| Last stable commit hash | [run: `git log --oneline -1`] |
+| Last stable commit hash | 0bb00d5 |
 | Last stable tag / version | [fill in if tagged; otherwise use commit hash] |
 | Date of last stable state | |
 | Verified by | |
@@ -129,9 +129,9 @@ pipeline, list the consumers here and notify them before reverting:
 
 | Role | Name | Contact |
 |------|------|---------|
-| Release Manager / Decision Maker | | |
-| Technical Lead | | |
-| Instructor / Supervisor | | |
+| Release Manager / Decision Maker | Kiru | 122 |
+| Technical Lead | Ram | 222 |
+| Instructor / Supervisor | Vinoth | 222 |
 
 ---
 
