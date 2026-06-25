@@ -32,10 +32,16 @@ The model SHOULD validate that `total_amount` is consistent with `quantity * uni
 - **THEN** model validation fails with a total consistency error
 
 ### Requirement: ProcurementRecommendation model constraints
-The system MUST define a Pydantic v2 `ProcurementRecommendation` model with fields `request_id`, `decision`, and `rationale`, where `decision` is constrained to exactly `approve`, `deny`, or `escalate`.
+The system MUST define a Pydantic v2 `ProcurementRecommendation` model with fields `request_id`, `decision`, `rationale`, and `confidence`, where `decision` is constrained to exactly `approve`, `deny`, or `escalate`.
+
+The `confidence` field MUST be a float constrained to the inclusive range `[0.0, 1.0]`.
 
 #### Scenario: Enforce decision enum
 - **WHEN** a recommendation is created with decision value outside `approve`, `deny`, or `escalate`
+- **THEN** model validation fails
+
+#### Scenario: Enforce confidence bounds
+- **WHEN** a recommendation is created with confidence below `0.0` or above `1.0`
 - **THEN** model validation fails
 
 ### Requirement: Non-empty rationale enforcement
@@ -44,4 +50,15 @@ The system MUST reject any `ProcurementRecommendation` with an empty or whitespa
 #### Scenario: Reject blank rationale
 - **WHEN** a recommendation is created with rationale set to empty string or whitespace
 - **THEN** model validation fails with a rationale validation error
+
+### Requirement: Confidence-to-decision consistency guidance
+The agent output contract MUST follow these confidence interpretations:
+- `1.0` for a single unambiguous triggered check
+- `0.8-0.9` for multiple checks that agree
+- `0.5-0.7` when at least one check is borderline
+- `<0.5` only when no clear decision is available, which SHALL result in `escalate`
+
+#### Scenario: Low confidence forces escalation
+- **WHEN** recommendation confidence is below `0.5`
+- **THEN** decision is `escalate`
 
