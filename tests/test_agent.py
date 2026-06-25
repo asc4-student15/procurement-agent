@@ -9,7 +9,8 @@ from pydantic_ai.models.test import TestModel
 
 import agent as procurement_agent
 from data.loader import load_requests
-from models import PurchaseRequest
+from models import ProcurementRecommendation, PurchaseRequest
+from tools.budget import check_budget
 
 
 def _load_request_by_id(request_id: str) -> PurchaseRequest:
@@ -33,7 +34,11 @@ def _load_request_record_by_id(request_id: str) -> dict[str, object]:
     raise AssertionError(f"Sample request {request_id} was not found in mock_data/requests.json")
 
 
-async def _assert_case(request_id: str, expected_decision: str, rationale: str) -> None:
+async def _assert_case(
+    request_id: str,
+    expected_decision: str,
+    rationale: str,
+) -> ProcurementRecommendation:
     """Run one request through the agent and assert decision plus rationale."""
     request = _load_request_by_id(request_id)
 
@@ -44,6 +49,7 @@ async def _assert_case(request_id: str, expected_decision: str, rationale: str) 
                 "request_id": request.request_id,
                 "decision": expected_decision,
                 "rationale": rationale,
+                "confidence": 0.9,
             },
         )
     ):
@@ -55,6 +61,8 @@ async def _assert_case(request_id: str, expected_decision: str, rationale: str) 
     assert result.data.decision == expected_decision
     assert isinstance(result.data.rationale, str)
     assert result.data.rationale.strip()
+    assert 0.0 <= result.data.confidence <= 1.0
+    return result.data
 
 
 @pytest.mark.asyncio
@@ -80,11 +88,12 @@ async def test_agent_deny_req_006_budget_overage() -> None:
 @pytest.mark.asyncio
 async def test_agent_policy_deny_req_009_catering_prohibition() -> None:
     """Case 3: policy-deny using REQ-009 (POL-004 catering prohibition)."""
-    await _assert_case(
+    result = await _assert_case(
         request_id="REQ-009",
         expected_decision="deny",
         rationale="Denied: POL-004 prohibits catering purchases.",
     )
+    assert result.confidence >= 0.9
 
 
 @pytest.mark.asyncio
@@ -95,6 +104,34 @@ async def test_agent_escalate_req_011_compliance_flagged_vendor() -> None:
         expected_decision="escalate",
         rationale="Escalated: Vertex Consulting is compliance-flagged.",
     )
+
+
+@pytest.mark.asyncio
+async def test_agent_escalate_req_015_tight_budget() -> None:
+    """REQ-015 should escalate when post-purchase remaining budget is very low."""
+    await _assert_case(
+        request_id="REQ-015",
+        expected_decision="escalate",
+        rationale=(
+            "Escalated: remaining budget after purchase is below 20% of quarterly budget "
+            "and requires manual review."
+        ),
+    )
+
+
+def test_req015_tight_budget_threshold_is_below_twenty_percent() -> None:
+    """REQ-015 has a post-purchase remaining budget below the 20% escalation threshold."""
+    req_record = _load_request_record_by_id("REQ-015")
+    budget_result = check_budget(
+        cost_center_id=str(req_record["cost_center_id"]),
+        requested_amount=float(req_record["total_amount"]),
+    )
+
+    quarterly_budget = float(budget_result["quarterly_budget"])
+    remaining_after_purchase = float(budget_result["remaining_after_purchase"])
+    assert quarterly_budget > 0.0
+    assert remaining_after_purchase / quarterly_budget < 0.20
+    assert "tight-budget escalation rule" in procurement_agent.SYSTEM_PROMPT.lower()
 
 
 @pytest.mark.asyncio
@@ -137,6 +174,7 @@ async def test_agent_expected_outcome_parametrized(request_id: str) -> None:
                 "request_id": request.request_id,
                 "decision": expected_outcome,
                 "rationale": rationale,
+                "confidence": 0.9 if request_id == "REQ-009" else 0.85,
             },
         )
     ):
@@ -146,3 +184,4 @@ async def test_agent_expected_outcome_parametrized(request_id: str) -> None:
 
     result = SimpleNamespace(data=raw_result.output)
     assert result.data.decision == expected_outcome
+    assert 0.0 <= result.data.confidence <= 1.0

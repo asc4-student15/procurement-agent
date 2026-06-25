@@ -49,6 +49,7 @@ async def test_agent_returns_recommendation_when_budget_loader_fails() -> None:
                         "Escalated due to budget loader failure during evaluation; "
                         "manual review is required."
                     ),
+                    "confidence": 0.45,
                 },
             )
         ),
@@ -61,6 +62,7 @@ async def test_agent_returns_recommendation_when_budget_loader_fails() -> None:
     assert isinstance(recommendation, ProcurementRecommendation)
     assert recommendation.decision == "escalate"
     assert recommendation.rationale.strip()
+    assert 0.0 <= recommendation.confidence <= 1.0
     lower_rationale = recommendation.rationale.lower()
     assert "budget" in lower_rationale
     assert "failure" in lower_rationale or "error" in lower_rationale
@@ -79,6 +81,7 @@ async def test_agent_escalates_for_unknown_vendor_with_rationale() -> None:
                 "request_id": unknown_vendor_request.request_id,
                 "decision": "escalate",
                 "rationale": "Escalated because vendor V-999 is unknown and requires verification.",
+                "confidence": 0.4,
             },
         )
     ):
@@ -89,4 +92,5 @@ async def test_agent_escalates_for_unknown_vendor_with_rationale() -> None:
     recommendation: ProcurementRecommendation = raw_result.output
     assert recommendation.decision == "escalate"
     assert recommendation.rationale.strip()
+    assert 0.0 <= recommendation.confidence <= 1.0
     assert "unknown" in recommendation.rationale.lower() and "vendor" in recommendation.rationale.lower()

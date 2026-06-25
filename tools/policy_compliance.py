@@ -172,6 +172,26 @@ def check_policy_compliance(request: PurchaseRequest) -> dict[str, object]:
                             }
                         )
 
+        if budget_row is not None:
+            remaining = budget_row.get("remaining")
+            if remaining is None:
+                remaining = budget_row.get("remaining_budget")
+            quarterly_budget = budget_row.get("quarterly_budget")
+            if remaining is not None and quarterly_budget is not None:
+                remaining_after_purchase = float(remaining) - request.total_amount
+                remaining_ratio = remaining_after_purchase / float(quarterly_budget)
+                if remaining_ratio < 0.20:
+                    violations.append(
+                        {
+                            "policy_id": "POL-TIGHT-BUDGET",
+                            "rule_description": (
+                                "Remaining budget after purchase falls below 20% of quarterly "
+                                f"budget (${remaining_after_purchase:,.2f} remaining)."
+                            ),
+                            "forced_decision": "escalate",
+                        }
+                    )
+
         forced = {v["forced_decision"] for v in violations}
         if "escalate" in forced:
             highest_severity = "escalate"

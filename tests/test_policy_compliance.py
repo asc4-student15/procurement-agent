@@ -70,3 +70,26 @@ def test_pol005_expired_contract_req007() -> None:
     pol005 = [v for v in result["violations"] if v["policy_id"] == "POL-005"]
     assert pol005
     assert pol005[0]["forced_decision"] == "deny"
+
+
+def test_req015_tight_budget_escalation_signal() -> None:
+    """REQ-015 should include a tight-budget escalation policy signal."""
+    request = PurchaseRequest(
+        request_id="REQ-015",
+        requestor="K. Oduya",
+        cost_center_id="CC-005",
+        vendor_name="FastTrack Couriers",
+        vendor_id="V-004",
+        category="courier_services",
+        item_description="Expedited document courier service",
+        quantity=1,
+        unit_price=1200.0,
+        total_amount=1200.0,
+    )
+
+    result = check_policy_compliance(request)
+
+    tight_budget = [v for v in result["violations"] if v["policy_id"] == "POL-TIGHT-BUDGET"]
+    assert tight_budget
+    assert tight_budget[0]["forced_decision"] == "escalate"
+    assert result["highest_severity"] == "escalate"
