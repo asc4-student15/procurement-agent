@@ -27,11 +27,13 @@ def _load_request_by_id(request_id: str) -> PurchaseRequest:
 
 @pytest.mark.asyncio
 async def test_agent_returns_recommendation_when_budget_loader_fails() -> None:
-    """When budget loading fails, agent still returns a recommendation with failure context."""
+    """Patch budget loading failure and verify agent returns an escalated recommendation."""
     request = _load_request_by_id("REQ-006")
 
     with (
+        # Patch the canonical loader path required by the acceptance criteria.
         patch("data.loader.load_budgets", side_effect=RuntimeError("budget loader failure")),
+        # Patch tool-local imported references so the RuntimeError is exercised at runtime.
         patch("tools.budget.load_budgets", side_effect=RuntimeError("budget loader failure")),
         patch(
             "tools.policy_compliance.load_budgets",
@@ -56,14 +58,17 @@ async def test_agent_returns_recommendation_when_budget_loader_fails() -> None:
         )
 
     recommendation: ProcurementRecommendation = raw_result.output
+    assert isinstance(recommendation, ProcurementRecommendation)
     assert recommendation.decision == "escalate"
     assert recommendation.rationale.strip()
-    assert "failure" in recommendation.rationale.lower() or "error" in recommendation.rationale.lower()
+    lower_rationale = recommendation.rationale.lower()
+    assert "budget" in lower_rationale
+    assert "failure" in lower_rationale or "error" in lower_rationale
 
 
 @pytest.mark.asyncio
 async def test_agent_escalates_for_unknown_vendor_with_rationale() -> None:
-    """Unknown vendor IDs should yield an escalation recommendation with vendor context."""
+    """Unknown vendor IDs should escalate and include vendor-failure context in rationale."""
     request = _load_request_by_id("REQ-003")
     unknown_vendor_request = request.model_copy(update={"vendor_id": "V-999", "vendor_name": "Unknown"})
 
