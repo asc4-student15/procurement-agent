@@ -35,7 +35,7 @@ You must always produce a ProcurementRecommendation with fields:
 
 Decision policy:
 1) Any tool/data error must escalate.
-2) Without errors, priority order is deny > escalate > approve.
+2) Without errors, priority order is escalate > deny > approve.
 3) If amount is within 5% of the director approval threshold, escalate.
 4) Never output a decision outside approve/deny/escalate.
 4) Any tool/data error must be reflected in rationale and must not be approved.
@@ -118,7 +118,7 @@ def _collect_driving_checks(
         if bool(checks["vendor_duplication"].get("violation", False)):
             driven_keys.append("vendor_duplication")
         risk_level = str(checks["risk_assessment"].get("risk_level", "")).lower()
-        if risk_level in {"critical", "medium"}:
+        if risk_level == "critical":
             driven_keys.append("risk_assessment")
     else:
         driven_keys = ["budget", "vendor_duplication", "policy_compliance", "risk_assessment"]
@@ -359,7 +359,7 @@ def _decision_from_checks(checks: dict[str, dict[str, object]]) -> tuple[Decisio
 
     Rules:
     - Any tool/data error forces "escalate".
-    - Otherwise "deny" overrides "escalate".
+    - Otherwise "escalate" overrides "deny".
     - "approve" only when no deny/escalate conditions are present.
     """
     escalate_reasons: list[str] = []
@@ -431,7 +431,7 @@ def _decision_from_checks(checks: dict[str, dict[str, object]]) -> tuple[Decisio
     if risk_error:
         has_tool_or_data_error = True
         escalate_reasons.append(f"Risk assessment error: {risk_error}")
-    elif risk_level in {"critical", "medium"}:
+    elif risk_level == "critical":
         summary = str(risk.get("risk_summary", "Risk review required.")).strip()
         escalate_reasons.append(summary)
     elif risk_level == "high":
@@ -440,10 +440,10 @@ def _decision_from_checks(checks: dict[str, dict[str, object]]) -> tuple[Decisio
 
     if has_tool_or_data_error:
         return "escalate", escalate_reasons + deny_reasons
-    if deny_reasons:
-        return "deny", deny_reasons + escalate_reasons
     if escalate_reasons:
         return "escalate", escalate_reasons + deny_reasons
+    if deny_reasons:
+        return "deny", deny_reasons + escalate_reasons
     return "approve", ["All required checks returned approval-safe results."]
 
 
@@ -473,7 +473,7 @@ def evaluate_purchase_request(request: PurchaseRequest) -> ProcurementRecommenda
     if recommendation.decision != required_decision:
         rationale = (
             f"{rationale} Decision normalized to '{required_decision}' by policy "
-            "precedence (errors escalate; otherwise deny > escalate > approve)."
+            "precedence (errors escalate; otherwise escalate > deny > approve)."
         )
 
     error_reasons = [reason for reason in priority_reasons if "error" in reason.lower()]

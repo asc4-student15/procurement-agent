@@ -49,7 +49,7 @@ def test_pol004_catering_case_insensitive_category() -> None:
 
 
 def test_pol002_manager_approval_threshold_range() -> None:
-    """Any request in $10,000-$49,999 should trigger POL-002."""
+    """Any request in $10,000-$49,999 should trigger POL-002 as a non-blocking note."""
     request = PurchaseRequest(
         request_id="REQ-POL002",
         requestor="A. Patel",
@@ -67,7 +67,8 @@ def test_pol002_manager_approval_threshold_range() -> None:
     pol002 = [v for v in result["violations"] if v["policy_id"] == "POL-002"]
 
     assert pol002
-    assert pol002[0]["forced_decision"] == "escalate"
+    assert pol002[0]["forced_decision"] == "none"
+    assert result["highest_severity"] == "none"
 
 
 def test_pol005_expired_contract_req007_expect_deny() -> None:

@@ -146,7 +146,7 @@ def check_policy_compliance(
                     f"(${pol002_low:,.2f} to ${pol002_high:,.2f}). Documented manager "
                     "approval is required before processing."
                 ),
-                "forced_decision": "escalate",
+                "forced_decision": "none",
             }
         )
 
