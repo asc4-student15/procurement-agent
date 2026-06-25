@@ -67,3 +67,19 @@ The implementation is close to Go/No-Go readiness, with 5 of 6 ITC.009 criteria 
 
 - Reconcile decision precedence between openspec/changes/add-procurement-intelligence-agent/specs/procurement-recommendation-agent/spec.md and agent.py so both reflect the same rule ordering.
 - Re-validate the OpenSpec change after reconciliation and update the peer review record if ratings change.
+
+---
+
+## Addendum (Post-Review Update)
+
+Date: 2026-06-25
+
+The Documentation Adequacy item (Row 5, Needs Attention) has been addressed.
+
+- Implemented change: openspec/changes/adjust-medium-risk-escalation/
+- Resolution applied: decision behavior and associated specs were reconciled so precedence and risk-trigger handling align with current implementation intent.
+- Evidence:
+	- Tests passed with updated behavior and regenerated ITC.003 report at docs/test-results.xml.
+	- OpenSpec validation passed after sync and reconciliation (`openspec validate --changes "adjust-medium-risk-escalation"`).
+
+Status update for Row 5: Resolved, pending formal reviewer sign-off.
