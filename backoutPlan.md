@@ -3,7 +3,7 @@
 **Control**: ITC.013 Backout Plan
 **Component**: Procurement and Vendor Intelligence Agent (Track A Capstone)
 **Repository**: [GitLab repository URL]
-**Last Updated**: 2026-06-24
+**Last Updated**: 2026-06-25
 **Prepared By**: Procurement Agent Group
 
 ---
@@ -15,7 +15,7 @@ and the test suite is passing.
 
 | Field | Value |
 |-------|-------|
-| Last stable commit hash | a8c86fa |
+| Last stable commit hash | e5f2a7e |
 | Last stable tag / version | a8c86fa |
 | Date of last stable state | 2026-06-24 |
 | Verified by | venkatesh |
@@ -129,6 +129,8 @@ pipeline, list the consumers here and notify them before reverting:
 
 | Role | Name | Contact |
 |------|------|---------|
+| Group Member | venkatesh | v.d.gnanasekaran@accenture.com |
+| Group Member | Kiru | kirubakaran.a.kannan@accenture.com |
 | Release Manager / Decision Maker | venkatesh | v.d.gnanasekaran@accenture.com |
 | Technical Lead | Kiru | kirubakaran.a.kannan@accenture.com |
 | Instructor / Supervisor | FedEx Capstone Instruction Team | Course channel / instructor contact |
