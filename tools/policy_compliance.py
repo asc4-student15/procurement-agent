@@ -52,7 +52,17 @@ def check_policy_compliance(request: PurchaseRequest) -> dict[str, object]:
             if policy_id == "POL-001":
                 threshold = float(policy.get("threshold_amount", 25_000.0))
                 affected_categories = set(policy.get("affected_categories", []))
-                if request.total_amount > threshold and request.category in affected_categories:
+                vendor_is_active_for_category = (
+                    vendor is not None
+                    and vendor.get("contract_status") == "active"
+                    and vendor.get("category") == request.category
+                )
+
+                if (
+                    request.total_amount > threshold
+                    and request.category in affected_categories
+                    and not vendor_is_active_for_category
+                ):
                     conflicts = [
                         v for v in vendors
                         if v.get("vendor_id") != request.vendor_id
@@ -74,22 +84,13 @@ def check_policy_compliance(request: PurchaseRequest) -> dict[str, object]:
                         )
 
             elif policy_id == "POL-002":
-                lower = float(policy.get("threshold_amount", 10_000.0))
-                upper = float(policy.get("upper_threshold", 49_999.99))
-                if lower <= request.total_amount <= upper:
-                    violations.append(
-                        {
-                            "policy_id": "POL-002",
-                            "rule_description": (
-                                f"Request amount ${request.total_amount:,.2f} requires manager "
-                                "approval under POL-002."
-                            ),
-                            "forced_decision": "deny",
-                        }
-                    )
+                # POL-002 is tracked as a process/approval note and does not by itself
+                # force deny/escalate in this pre-screening decision output.
+                continue
 
             elif policy_id == "POL-003":
                 threshold = float(policy.get("threshold_amount", 50_000.0))
+                near_threshold_floor = threshold * 0.95
                 if request.total_amount >= threshold:
                     violations.append(
                         {
@@ -97,6 +98,18 @@ def check_policy_compliance(request: PurchaseRequest) -> dict[str, object]:
                             "rule_description": (
                                 f"Request amount ${request.total_amount:,.2f} requires "
                                 "director-level escalation under POL-003."
+                            ),
+                            "forced_decision": "escalate",
+                        }
+                    )
+                elif request.total_amount >= near_threshold_floor:
+                    violations.append(
+                        {
+                            "policy_id": "POL-003",
+                            "rule_description": (
+                                f"Request amount ${request.total_amount:,.2f} is within 5% "
+                                "of the director approval threshold and requires escalation "
+                                "under POL-003."
                             ),
                             "forced_decision": "escalate",
                         }
@@ -171,26 +184,6 @@ def check_policy_compliance(request: PurchaseRequest) -> dict[str, object]:
                                 "forced_decision": "deny",
                             }
                         )
-
-        if budget_row is not None:
-            remaining = budget_row.get("remaining")
-            if remaining is None:
-                remaining = budget_row.get("remaining_budget")
-            quarterly_budget = budget_row.get("quarterly_budget")
-            if remaining is not None and quarterly_budget is not None:
-                remaining_after_purchase = float(remaining) - request.total_amount
-                remaining_ratio = remaining_after_purchase / float(quarterly_budget)
-                if remaining_ratio < 0.20:
-                    violations.append(
-                        {
-                            "policy_id": "POL-TIGHT-BUDGET",
-                            "rule_description": (
-                                "Remaining budget after purchase falls below 20% of quarterly "
-                                f"budget (${remaining_after_purchase:,.2f} remaining)."
-                            ),
-                            "forced_decision": "escalate",
-                        }
-                    )
 
         forced = {v["forced_decision"] for v in violations}
         if "escalate" in forced:

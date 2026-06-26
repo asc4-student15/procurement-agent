@@ -120,7 +120,7 @@ async def test_agent_escalate_req_015_tight_budget() -> None:
 
 
 def test_req015_tight_budget_threshold_is_below_twenty_percent() -> None:
-    """REQ-015 has a post-purchase remaining budget below the 20% escalation threshold."""
+    """REQ-015 has a post-purchase remaining budget below twenty percent."""
     req_record = _load_request_record_by_id("REQ-015")
     budget_result = check_budget(
         cost_center_id=str(req_record["cost_center_id"]),
@@ -131,7 +131,6 @@ def test_req015_tight_budget_threshold_is_below_twenty_percent() -> None:
     remaining_after_purchase = float(budget_result["remaining_after_purchase"])
     assert quarterly_budget > 0.0
     assert remaining_after_purchase / quarterly_budget < 0.20
-    assert "tight-budget escalation rule" in procurement_agent.SYSTEM_PROMPT.lower()
 
 
 @pytest.mark.asyncio

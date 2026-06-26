@@ -28,8 +28,8 @@ def test_pol004_catering_prohibition_req009_style() -> None:
     assert pol004[0]["forced_decision"] == "deny"
 
 
-def test_pol002_manager_approval_threshold() -> None:
-    """Any request between 10,000 and 49,999.99 should trigger POL-002."""
+def test_pol002_manager_approval_threshold_is_non_blocking() -> None:
+    """POL-002 manager approval is informational and should not force a violation."""
     request = PurchaseRequest(
         request_id="REQ-POL002",
         requestor="T. Beaumont",
@@ -46,8 +46,7 @@ def test_pol002_manager_approval_threshold() -> None:
     result = check_policy_compliance(request)
 
     pol002 = [v for v in result["violations"] if v["policy_id"] == "POL-002"]
-    assert pol002
-    assert pol002[0]["forced_decision"] == "deny"
+    assert not pol002
 
 
 def test_pol005_expired_contract_req007() -> None:
@@ -72,8 +71,8 @@ def test_pol005_expired_contract_req007() -> None:
     assert pol005[0]["forced_decision"] == "deny"
 
 
-def test_req015_tight_budget_escalation_signal() -> None:
-    """REQ-015 should include a tight-budget escalation policy signal."""
+def test_req015_has_no_synthetic_tight_budget_policy_violation() -> None:
+    """REQ-015 should not include synthetic tight-budget policy violations."""
     request = PurchaseRequest(
         request_id="REQ-015",
         requestor="K. Oduya",
@@ -90,6 +89,4 @@ def test_req015_tight_budget_escalation_signal() -> None:
     result = check_policy_compliance(request)
 
     tight_budget = [v for v in result["violations"] if v["policy_id"] == "POL-TIGHT-BUDGET"]
-    assert tight_budget
-    assert tight_budget[0]["forced_decision"] == "escalate"
-    assert result["highest_severity"] == "escalate"
+    assert not tight_budget

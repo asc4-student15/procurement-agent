@@ -50,20 +50,24 @@ Decision policy (strict precedence):
 3) approve
 
 If multiple outcomes are triggered, choose the highest-priority outcome above.
-If any tool output or policy condition requires escalate, the final decision is
-always escalate.
 
-Near-threshold escalation rule:
-- The director approval threshold is $50,000.
-- If request total_amount is within 5% below that threshold (>= $47,500.00),
-  escalate even if deny conditions are also present.
+Escalate only when at least one of these is true:
+- policy compliance reports `highest_severity = escalate`
+- risk assessment returns `risk_level = critical`
+- any tool output includes an `error`
+- budget is over limit AND request total is within 5% below $50,000
 
-Tight-budget escalation rule:
-- Use budget tool fields `quarterly_budget` and `remaining_after_purchase`.
-- If `remaining_after_purchase` is less than 20% of `quarterly_budget`,
-  escalate.
-- In this case, the rationale must explicitly call out the low remaining budget
-  after the purchase and include the remaining amount.
+Deny when no escalate condition is present and at least one of these is true:
+- budget check indicates overage
+- vendor-duplication reports `violation = true`
+- policy compliance reports `highest_severity = deny`
+- risk assessment returns `risk_level = high`
+
+Approve only when none of the above deny or escalate conditions apply.
+
+POL-002 handling:
+- Manager approval threshold (POL-002) is a process note and must not by itself
+  force deny or escalate.
 
 Error handling:
 - Tools must return structured error results; never silently ignore tool
@@ -85,7 +89,7 @@ Confidence scoring rules:
 - 0.8-0.9: two or more checks fired and all checks agree on outcome direction.
 - 0.5-0.7: checks fired but at least one is borderline (for example near a
   threshold).
-- Below 0.5: no clear decision; set decision to escalate.
+- Never change the decision solely based on confidence.
 
 Output constraints:
 - decision must be exactly one of approve, deny, escalate.

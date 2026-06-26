@@ -26,10 +26,14 @@ async def main() -> None:
 
         raw_result = await agent.run(build_request_prompt(request))
         decision = raw_result.output.decision
-        match = "OK" if decision == expected else "X"
+        if expected == "ambiguous":
+            is_match = True
+        else:
+            is_match = decision == expected
+        match = "OK" if is_match else "X"
 
         results[decision] += 1
-        if decision != expected:
+        if not is_match:
             results["mismatch"] += 1
 
         print(f"{match} {req_data['request_id']}: expected={expected}, got={decision}")

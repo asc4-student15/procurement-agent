@@ -57,6 +57,13 @@ def check_vendor_duplication(
         pol001 = next((p for p in policies if p.get("policy_id") == "POL-001"), None)
         affected_categories = set(pol001.get("affected_categories", [])) if pol001 else set()
 
+        requested_vendor = next((v for v in vendors if v.get("vendor_id") == vendor_id), None)
+        requested_vendor_is_active_for_category = (
+            requested_vendor is not None
+            and requested_vendor.get("contract_status") == "active"
+            and requested_vendor.get("category") == category
+        )
+
         if requested_amount <= _POL001_THRESHOLD:
             return {
                 "violation": False,
@@ -80,6 +87,20 @@ def check_vendor_duplication(
                 "conflicting_vendor_ids": [],
                 "conflicting_contract_details": [],
                 "reason": f"POL-001 not applicable to category '{category}'.",
+            }
+
+        if requested_vendor_is_active_for_category:
+            return {
+                "violation": False,
+                "vendor_id": vendor_id,
+                "category": category,
+                "amount": requested_amount,
+                "conflicting_vendor_ids": [],
+                "conflicting_contract_details": [],
+                "reason": (
+                    "Requested vendor already has an active contract in this category; "
+                    "POL-001 conflict is not triggered."
+                ),
             }
 
         conflicts = [
